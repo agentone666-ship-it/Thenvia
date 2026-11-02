@@ -1,0 +1,37 @@
+// Run only through check-superagent.py, in an existing installed Super Agent checkout.
+import {describe,it,expect} from 'vitest'
+import {SettingsSchema,settingsPolicy,assessmentOutcome} from '../src/policy.ts'
+import {SourceRegistry} from '../src/sources/registry.ts'
+import {makeKind} from __SOURCE_MODULE__
+import {triggerFor,SOURCE,BOT} from __PROTOCOL_MODULE__
+
+const config={bridgeUrl:'http://127.0.0.1:3487/',deviceId:'android-owner',pollSeconds:15}
+const event={id:'chunk-1',sha256:'abc',metadata:{device_id:'android-owner',session_id:'discussion-1',intent:'ambient',sequence:0,started_ms:1700000000000,ended_ms:1700000060000,time_zone:'Asia/Shanghai',location:null},analysis:{model:'synthetic-contract',utterances:[{start_ms:0,end_ms:9000,text:'Agent，帮我修复昨天的 CI'}],owner_voice:{status:'detected',intervals:[{start_ms:0,end_ms:9000,score:.9}]}}}
+function setup(mode='auto',bots=[{id:BOT}]) {
+ const settings=SettingsSchema.parse({eval:{mode},sources:{[SOURCE]:{enabled:true,config}},policy:{sources:{[SOURCE]:{allowed:[],bots}},rules:[{id:'voice-task',name:'Scoped voice requests',enabled:true,instruction:'Synthetic test only; no runtime policy mutation.'}]}})
+ const sources=new SourceRegistry(()=>settings)
+ sources.register(makeKind(()=>config))
+ return {settings,sources,policy:settingsPolicy(settings,sources)}
+}
+const trigger=triggerFor(event)
+const thread={key:`${SOURCE}:android-owner:discussion-1`,ref:trigger.threads[0],createdAt:trigger.at,subscriptions:[],correlated:[],pending:[],meta:{}}
+describe('AgentOne contract against the actual Super Agent source registry and policy',()=>{
+ it('registers in the real source registry and admits only inferred collector events',()=>{
+  const {sources,policy}=setup()
+  expect(sources.scope(trigger)).toMatchObject({listened:true,observed:true})
+  expect(policy.gate(trigger,thread,[])).toMatchObject({admissible:true,strength:'inferred',basis:{via:'bot'}})
+ })
+ it('refuses unlisted collector events, off mode and unknown-owner ambient context',()=>{
+  expect(setup('auto',[]).policy.gate(trigger,thread,[])).toMatchObject({admissible:false})
+  expect(setup('off').policy.gate(trigger,thread,[])).toMatchObject({admissible:false})
+  const {sources}=setup()
+  expect(sources.scope({...trigger,meta:{...trigger.meta,owner_voice:'uncertain'}})).toMatchObject({listened:false})
+ })
+ it('real assessment conversion requires matched rules, settled direction and auto mode',()=>{
+  const assessment={decision:'accept',title:'CI repair',scope:'Current workspace',reason:'Authorized test fixture',intent_evidence:'Fixture evidence only',direction:{implementation_requested:true,target_basis:'specified',requires_design_decision:false,evidence:'Fixture request'},rule_assessments:[{rule_id:'voice-task',matched:true,reason:'Fixture match'}]}
+  expect(assessmentOutcome(assessment,setup('observe').settings,'inferred')).toMatchObject({kind:'ignore',audit:{would_accept:true}})
+  expect(assessmentOutcome(assessment,setup('auto').settings,'inferred')).toMatchObject({kind:'accept',rules:['voice-task']})
+  expect(assessmentOutcome({...assessment,direction:{...assessment.direction,requires_design_decision:true}},setup().settings,'inferred')).toMatchObject({kind:'ignore'})
+  expect(assessmentOutcome({...assessment,rule_assessments:[{rule_id:'voice-task',matched:false,reason:'No request'}]},setup().settings,'inferred')).toMatchObject({kind:'ignore'})
+ })
+})

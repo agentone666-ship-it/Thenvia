@@ -1,0 +1,12 @@
+{
+  "name": "agentone-superagent-context",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "source.mjs",
+  "exports": {".": "./source.mjs"},
+  "dsh": {"bundle": {"patch": "./cordis.patch.yml"}, "manifestVersion": 1},
+  "engines": {"node": ">=22.19.0"},
+  "scripts": {"start": "node server.mjs", "test": "node --test test.mjs"},
+  "peerDependencies": {"zod": "4.4.3"}
+}
