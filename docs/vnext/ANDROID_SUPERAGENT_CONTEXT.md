@@ -105,4 +105,6 @@ flowchart LR
 
 下一步顺序：修复/配置现有宿主健康 → 配置私有 HTTPS 与配对 → 真机录音/声纹校准 → 模型真实决策 benchmark → 启用限定项目规则 → 测一次真实交付和手机回报 → 接即时 Push → 增加其他 Context 来源。
 
+本轮命令、结果与未通过项见 [验证记录](../reviews/ANDROID_CONTEXT_20261102.md)。
+
 参考：[官方原型](https://github.com/deepseek-ai/dsh-superagent-prototype)、[Source 扩展契约](https://github.com/deepseek-ai/dsh-superagent-prototype/blob/main/docs/008-cookbook.md)、[Android 麦克风前台服务](https://developer.android.com/develop/background-work/services/fgs/service-types#microphone)。
