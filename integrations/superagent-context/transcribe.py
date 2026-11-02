@@ -29,7 +29,11 @@ def main():
         with urllib.request.urlopen(req,timeout=45) as response:data=response.read()
         return data if binary else json.loads(data)
     while True:
-        job=call('v1/jobs/claim',{}).get('job')
+        try:job=call('v1/jobs/claim',{}).get('job')
+        except Exception:
+            print('Context bridge unavailable; retrying without dropping audio.',file=sys.stderr)
+            if args.once:raise
+            time.sleep(5);continue
         if not job:
             if args.once:return
             time.sleep(5);continue
@@ -53,7 +57,8 @@ def main():
                 call('v1/jobs/complete',{'id':job['id'],'lease':job['lease'],'sha256':job['sha256'],'model':'faster-whisper:'+pathlib.Path(args.model).name,'utterances':utterances,'owner_voice':owner})
         except Exception as error:
             # No text, audio, token or command line is logged. Keep a failed job retryable.
-            call('v1/jobs/complete',{'id':job['id'],'lease':job['lease'],'sha256':job['sha256'],'error':type(error).__name__})
+            try:call('v1/jobs/complete',{'id':job['id'],'lease':job['lease'],'sha256':job['sha256'],'error':type(error).__name__})
+            except Exception:pass  # Durable lease expiry makes a lost error receipt retryable.
             print('Local ASR failed; source remains queued.',file=sys.stderr)
         if args.once:return
 

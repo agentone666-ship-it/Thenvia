@@ -60,6 +60,11 @@ test('out of order ASR completion never drops an earlier event behind a global c
   const a=store.claim(),b=store.claim();store.analyze(analysis(b));store.acknowledge(b.id,'stored');store.analyze(analysis(a));
   assert.deepEqual(store.pendingEvents().map(e=>e.id),['first']);
 });
+test('only public voice provenance crosses into context; embeddings/private paths are stripped',t=>{
+  const {store}=setup(t);store.ingest(fixture());
+  store.analyze(analysis(store.claim(),{owner_voice:{status:'detected',intervals:[{start_ms:0,end_ms:9000,score:.9,private_path:'/private/profile'}],profile_id:'profile-generation-1',embedding:[.1,.2,.3],profile:'/private/owner.json'}}));
+  const result=JSON.stringify(store.events());assert.equal(result.includes('embedding'),false);assert.equal(result.includes('/private/'),false);assert.equal(store.events()[0].analysis.owner_voice.profile_id,'profile-generation-1');
+});
 test('restart preserves incoming audio, leases, intake receipts and idempotent results',t=>{
   const {store,root}=setup(t);store.ingest(fixture());const job=store.claim();store.analyze(analysis(job));store.acknowledge(job.id,'stored');
   const body={id:'report-1',session_id:'discussion-1',device_id:'android-owner',text:'方案草稿已生成，尚未发布。'};

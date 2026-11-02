@@ -6,7 +6,7 @@
 
 | 检查 | 结果 | 证明范围 |
 | --- | --- | --- |
-| Bridge / Source / Channel | 11 / 11 通过 | 哈希、幂等、租约失效、ASR 错误保留、乱序结果不漏投、HTTP 角色隔离、上下文与结果收件箱往返 |
+| Bridge / Source / Channel | 12 / 12 通过 | 哈希、幂等、租约失效、ASR 错误保留、乱序结果不漏投、HTTP 角色隔离、上下文与结果收件箱往返、声纹私有数据不进入 Context |
 | 已安装 Super Agent 的实际契约 | 3 / 3 通过 | 真实 SourceRegistry 注册、真实 policy.gate、observe/auto 的 assessmentOutcome；不是 LLM 语义识别测试 |
 | Voice task 场景入口 | 14 / 14 路由契约通过 | 确认什么事件可交给模型评估；不代表 14 个任务做对了 |
 | 模型任务判断 benchmark | `not_run` | 没有实际 Super Agent 决策/执行证据，不报准确率 |
@@ -32,6 +32,7 @@ bash mobile/android/build.sh
 - 本机现有 Super Agent 状态命令返回 1；发现进程但未证明运行健康。没有重启现有宿主、变更 live Policy、开启自动接单或派发真实任务。
 - 可选 ASR worker 仅做语法检查与其 HTTP 协议测试；没有本轮手机真实音频的 ASR/声纹准确率结果。
 - 本地安装 actionlint 时 Go 代理网络超时，未获得本地 actionlint 结果；远端 workflow-lint 由已有固定镜像执行。
+- 首轮远端 Android 构建发现资源空目录没有进入 Git；已增加正式字符串资源，修复干净 checkout 缺目录的问题。远端 workflow-lint 与 Node 22/24 原型测试已通过，最终提交的完整 CI 结果需单独核对。
 
 ## 使用边界
 

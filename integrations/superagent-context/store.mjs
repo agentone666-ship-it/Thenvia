@@ -50,7 +50,8 @@ export class ContextStore {
     need(bytes.length>=32 && bytes.length<=4*1024*1024 && bytes.toString('base64')===body.audio_base64, 'Invalid audio encoding');
     need(bytes.toString('ascii',4,8)==='ftyp', 'Not an M4A container');
     // Keep only the defined provenance fields; device text never becomes model/system instructions.
-    const metadata={id:m.id,session_id:m.session_id,device_id:m.device_id,intent:m.intent,started_ms:m.started_ms,ended_ms:m.ended_ms,time_zone:m.time_zone,mime_type:m.mime_type,sequence:m.sequence,location:m.location??null};
+    const location=m.location?Object.fromEntries(['latitude','longitude','accuracy_m','sampled_ms','source'].map(k=>[k,m.location[k]])):null;
+    const metadata={id:m.id,session_id:m.session_id,device_id:m.device_id,intent:m.intent,started_ms:m.started_ms,ended_ms:m.ended_ms,time_zone:m.time_zone,mime_type:m.mime_type,sequence:m.sequence,location};
     const digest=sha(bytes), serialized=JSON.stringify(metadata);
     const old=this.db.prepare('SELECT digest,metadata FROM segments WHERE id=?').get(m.id);
     if(old) {need(old.digest===digest && old.metadata===serialized,'Source ID already has different content'); return {accepted:true,duplicate:true,sha256:digest};}
@@ -91,7 +92,13 @@ export class ContextStore {
     need(Array.isArray(job.owner_voice.intervals) && job.owner_voice.intervals.length<=200,'Invalid owner intervals');
     for(const i of job.owner_voice.intervals) need(Number.isSafeInteger(i.start_ms)&&Number.isSafeInteger(i.end_ms)&&i.start_ms>=0&&i.end_ms>i.start_ms&&i.end_ms<=m.ended_ms-m.started_ms+1000&&finite(i.score)&&i.score>=-1&&i.score<=1,'Invalid voice interval');
     need(job.owner_voice.status!=='detected' || job.owner_voice.intervals.length>0,'Detected owner needs timed evidence');
-    const analysis={model:job.model,utterances:job.utterances,owner_voice:job.owner_voice,analyzed_at:new Date(this.clock()).toISOString(),machine_transcript:true};
+    // Never persist/export a worker's accidental profile embedding or private filesystem path.
+    const owner_voice={status:job.owner_voice.status,intervals:job.owner_voice.intervals.map(({start_ms,end_ms,score})=>({start_ms,end_ms,score}))};
+    for(const field of ['profile_id','model_hash'])if(job.owner_voice[field]!=null) {
+      need(typeof job.owner_voice[field]==='string'&&/^[A-Za-z0-9_-]{1,200}$/.test(job.owner_voice[field]),'Invalid voice provenance');owner_voice[field]=job.owner_voice[field];
+    }
+    if(typeof job.owner_voice.cross_device_calibrated==='boolean')owner_voice.cross_device_calibrated=job.owner_voice.cross_device_calibrated;
+    const analysis={model:job.model,utterances:job.utterances.map(({start_ms,end_ms,text})=>({start_ms,end_ms,text})),owner_voice,analyzed_at:new Date(this.clock()).toISOString(),machine_transcript:true};
     need(JSON.stringify(analysis).length<=200000,'Analysis too large');
     this.db.prepare('UPDATE segments SET analysis=?,failure=NULL,lease=NULL,lease_until=NULL WHERE id=?').run(JSON.stringify(analysis),row.id);
     return {accepted:true};
