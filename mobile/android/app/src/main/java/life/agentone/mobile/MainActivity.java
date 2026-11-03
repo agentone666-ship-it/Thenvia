@@ -52,14 +52,15 @@ public final class MainActivity extends Activity {
     private void settings(){
         if(!Sync.prefs(this).getString("bridge","").isEmpty()){
             new AlertDialog.Builder(this).setTitle("Super Agent 已配对").setMessage(Sync.prefs(this).getString("sync_status","连接状态将在下一次同步后更新"))
-                .setPositiveButton("检查连接",(d,w)->new Thread(()->Sync.run(this)).start()).setNegativeButton("关闭",null).show();return;
+                .setPositiveButton("检查连接",(d,w)->new Thread(()->Sync.run(this)).start()).setNeutralButton("重新配对",(d,w)->{Sync.prefs(this).edit().putBoolean("allow_repair_once",true).commit();pastePairingLink();}).setNegativeButton("关闭",null).show();return;
         }
         new AlertDialog.Builder(this).setTitle("连接 Mac 上的 Super Agent").setMessage("在 Mac 生成手机配对链接，发送到这台手机后点开。也可以复制链接，点下方按钮完成连接。无需填写地址、设备编号或密钥。")
-            .setPositiveButton("粘贴并连接",(d,w)->{
-                android.content.ClipboardManager clip=getSystemService(android.content.ClipboardManager.class);
-                if(clip.hasPrimaryClip()&&clip.getPrimaryClip().getItemCount()>0)pair(clip.getPrimaryClip().getItemAt(0).coerceToText(this).toString());
-                else Toast.makeText(this,"先复制 Mac 发来的配对链接",Toast.LENGTH_LONG).show();
-            }).setNegativeButton("稍后",null).show();
+            .setPositiveButton("粘贴并连接",(d,w)->pastePairingLink()).setNegativeButton("稍后",null).show();
+    }
+    private void pastePairingLink(){
+        android.content.ClipboardManager clip=getSystemService(android.content.ClipboardManager.class);
+        if(clip.hasPrimaryClip()&&clip.getPrimaryClip().getItemCount()>0)pair(clip.getPrimaryClip().getItemAt(0).coerceToText(this).toString());
+        else Toast.makeText(this,"先复制 Mac 发来的配对链接",Toast.LENGTH_LONG).show();
     }
     private void pair(String link){
         Toast.makeText(this,"正在安全配对…",Toast.LENGTH_SHORT).show();

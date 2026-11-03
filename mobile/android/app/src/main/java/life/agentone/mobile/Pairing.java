@@ -9,7 +9,8 @@ import java.nio.charset.StandardCharsets;
 
 final class Pairing {
     static synchronized void connect(Context context,String link)throws Exception {
-        if(!Sync.prefs(context).getString("bridge","").isEmpty())throw new IOException("已配对，不接受外部链接覆盖已有连接");
+        boolean repair=Sync.prefs(context).getBoolean("allow_repair_once",false);Sync.prefs(context).edit().remove("allow_repair_once").commit();
+        if(!Sync.prefs(context).getString("bridge","").isEmpty()&&!repair)throw new IOException("已配对，不接受外部链接覆盖已有连接");
         Uri uri=Uri.parse(link);
         if(!"agentone".equals(uri.getScheme())||!"pair".equals(uri.getHost()))throw new IOException("不是 AgentOne 配对链接");
         String server=uri.getQueryParameter("server"),code=uri.getQueryParameter("code");

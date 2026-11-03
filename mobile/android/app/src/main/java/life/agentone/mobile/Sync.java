@@ -20,11 +20,12 @@ final class Sync {
     static File queue(Context c) {File f=new File(c.getFilesDir(),"pending");f.mkdirs();return f;}
     static synchronized void status(Context c,String text) {prefs(c).edit().putString("sync_status",text).apply();}
     static JSONObject request(Context c,String method,String path,JSONObject body) throws Exception {
-        String base=prefs(c).getString("bridge","");URL url=new URL(base+path);
+        java.util.Map<String,?> config=prefs(c).getAll();
+        String base=(String)config.get("bridge");URL url=new URL(base+path);
         if(!url.getProtocol().equals("https")||url.getUserInfo()!=null)throw new IOException("需要 HTTPS 服务地址");
         HttpsURLConnection connection=(HttpsURLConnection)url.openConnection();
         connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(15000);connection.setReadTimeout(30000);
-        connection.setRequestMethod(method);connection.setRequestProperty("Authorization","Bearer "+prefs(c).getString("token",""));
+        connection.setRequestMethod(method);connection.setRequestProperty("Authorization","Bearer "+config.get("token"));
         if(body!=null) {
             byte[] data=body.toString().getBytes(StandardCharsets.UTF_8);
             connection.setRequestProperty("Content-Type","application/json");connection.setDoOutput(true);connection.setFixedLengthStreamingMode(data.length);
