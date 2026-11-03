@@ -25,7 +25,9 @@ public final class MainActivity extends Activity {
         android.widget.FrameLayout.LayoutParams ip=new android.widget.FrameLayout.LayoutParams(-1,-2);ip.setMargins(dp(16),dp(18),dp(16),0);ip.gravity=android.view.Gravity.TOP;root.addView(island,ip);
         LinearLayout footer=new LinearLayout(this);footer.setOrientation(LinearLayout.VERTICAL);footer.setPadding(dp(28),0,dp(28),dp(28));
         TextView caption=text("你的现场，随身留存。",18,0xff9d9da3);footer.addView(caption);
-        TextView floating=text("开启悬浮灵动岛   ↗",13,IslandPanel.MINT);floating.setOnClickListener(v->{
+        boolean islandEnabled=Sync.prefs(this).getBoolean("island_enabled",false)&&android.provider.Settings.canDrawOverlays(this);
+        TextView floating=text(islandEnabled?"关闭悬浮灵动岛":"开启悬浮灵动岛   ↗",13,IslandPanel.MINT);floating.setOnClickListener(v->{
+            if(islandEnabled){Sync.prefs(this).edit().putBoolean("island_enabled",false).apply();stopService(new Intent(this,IslandService.class));show();return;}
             Sync.prefs(this).edit().putBoolean("island_enabled",true).apply();
             if(!android.provider.Settings.canDrawOverlays(this))startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,android.net.Uri.parse("package:"+getPackageName())));
             else {Sync.prefs(this).edit().putBoolean("island_enabled",true).apply();startForegroundService(new Intent(this,IslandService.class));}
