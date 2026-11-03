@@ -16,6 +16,7 @@ build/
 AgentOneLifeRuntime/node_modules/
 AgentOneLifeRuntime/dist/
 AgentOneLifeRuntime/dist-test/
+integrations/superagent-context/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

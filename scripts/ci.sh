@@ -4,6 +4,10 @@ set -euo pipefail
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 runtime() {
+    npm ci --prefix integrations/superagent-context --ignore-scripts --no-audit --no-fund
+    node --test integrations/superagent-context/test.mjs
+    node benchmarks/voice-tasks/score.mjs
+    python3 -m py_compile integrations/superagent-context/transcribe.py integrations/superagent-context/check-superagent.py
     python3 tools/voiceprint/test_policy.py
     npm --prefix AgentOneLifeRuntime test
     node plugins/personal-context-memory/test.mjs

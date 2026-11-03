@@ -1,11 +1,15 @@
 import AgentOneCaptureKit
 import AppKit
 import SwiftUI
+import CoreImage.CIFilterBuiltins
 
 /// A quiet surface: recording at a glance, evidence on demand, controls one tab away.
 struct IslandView: View {
     @ObservedObject var model: CaptureModel
     var onExpand: (() -> Void)? = nil
+    @State private var mobilePairingBusy = false
+    @State private var mobilePairingQRCode: NSImage?
+    @State private var mobilePairingStatus = "手机点开配对链接即可连接，无需填写地址和密钥。"
     @State private var tab = IslandTab.capture
     @State private var showEvents = false
     @State private var showAudioChunks = false
@@ -305,6 +309,16 @@ struct IslandView: View {
     private var agentConnectionSection:some View {
         VStack(alignment:.leading,spacing:12) {
             HStack {Label("连接 Agent",systemImage:"puzzlepiece.extension").font(.system(size:17,weight:.semibold));Spacer();Text("本机连接").font(.system(size:10)).foregroundStyle(accent)}
+            HStack {
+                Button(mobilePairingBusy ? "正在准备连接…" : "连接 Android 手机") { prepareMobilePairing() }
+                    .disabled(mobilePairingBusy)
+                Spacer()
+            }.font(.system(size:11)).tint(accent)
+            Text(mobilePairingStatus).font(.system(size:10)).foregroundStyle(.white.opacity(0.5)).textSelection(.enabled)
+            if let image=mobilePairingQRCode {
+                Image(nsImage:image).interpolation(.none).resizable().frame(width:156,height:156).padding(8).background(.white,in:RoundedRectangle(cornerRadius:12))
+                Text("手机扫描后点开配对 · 2 分钟有效").font(.system(size:10)).foregroundStyle(.white.opacity(0.45))
+            }
             Picker("接入方式",selection:$model.connectionMode) {Text("插件 · 推荐").tag("plugin");Text("MCP").tag("mcp")}.pickerStyle(.segmented)
                 .onChange(of:model.connectionMode) {_,value in UserDefaults.standard.set(value,forKey:"vNext.connectionMode")}
             Text(model.connectionMode=="plugin" ? "把记忆工具和回忆工作流一起交给 Agent，支持导入本地插件的桌面宿主。":"复制配置到支持本机 stdio MCP 的宿主，使用同一套记忆与录音工具。").font(.system(size:11)).foregroundStyle(.white.opacity(0.55))
@@ -320,6 +334,34 @@ struct IslandView: View {
             Text(model.lastAgentConnection).font(.system(size:10)).foregroundStyle(accent.opacity(0.8))
             Text("插件不会自动开启原音访问，也不会让关闭的 Agent 持续分析。资料被宿主读取后，可能交给它使用的云模型。").font(.system(size:10)).foregroundStyle(.white.opacity(0.35))
         }.padding(14).background(.white.opacity(0.045),in:RoundedRectangle(cornerRadius:14)).disabled(model.demo)
+    }
+    private func prepareMobilePairing() {
+        guard !mobilePairingBusy else { return }
+        mobilePairingBusy = true
+        mobilePairingStatus = "正在检测本机服务与安全连接…"
+        let script = Bundle.main.resourceURL?.appendingPathComponent("mobile-connect/connect-phone.mjs")
+        Task { @MainActor in
+            let response = await Task.detached(priority: .utility) { () -> String in
+                guard let script, FileManager.default.fileExists(atPath:script.path) else { return "请更新到包含手机连接组件的版本" }
+                let node = [NSHomeDirectory()+"/.local/bin/node","/opt/homebrew/bin/node","/usr/local/bin/node"].first {FileManager.default.isExecutableFile(atPath:$0)}
+                guard let node else { return "未找到 Node.js，请先安装本机服务组件" }
+                let p=Process();p.executableURL=URL(fileURLWithPath:node);p.arguments=[script.path]
+                let output=Pipe();p.standardOutput=output;p.standardError=FileHandle.nullDevice
+                do { try p.run();let data=output.fileHandleForReading.readDataToEndOfFile();p.waitUntilExit()
+                    guard p.terminationStatus==0 else {return "连接暂未准备好，请检查网络后重试"}
+                    return String(data:data,encoding:.utf8) ?? "连接暂不可用"
+                } catch {return "连接组件未能启动，请检查安装"}
+            }.value
+            mobilePairingBusy = false
+            if let data=response.data(using:.utf8),let result=try? JSONSerialization.jsonObject(with:data) as? [String:Any],let link=result["link"] as? String {
+                let qr=CIFilter.qrCodeGenerator();qr.message=Data(link.utf8)
+                if let output=qr.outputImage?.transformed(by:CGAffineTransform(scaleX:6,y:6)),let cg=CIContext().createCGImage(output,from:output.extent) {
+                    mobilePairingQRCode=NSImage(cgImage:cg,size:NSSize(width:output.extent.width,height:output.extent.height))
+                }
+                NSPasteboard.general.clearContents();NSPasteboard.general.setString(link,forType:.string)
+                mobilePairingStatus = "配对链接已复制，有效 2 分钟。发到手机点开即可。" + ((result["host_ready"] as? Bool)==true ? "" : " Super Agent 尚未就绪，手机配对后暂不能派单。")
+            } else { mobilePairingStatus=response }
+        }
     }
     private func time(_ value: String?) -> String {
         guard let value,let ms = Double(value) else { return "未知时间" }

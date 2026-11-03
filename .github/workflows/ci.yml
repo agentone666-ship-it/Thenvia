@@ -119,9 +119,33 @@ jobs:
           path: build/ci-logs/
           retention-days: 7
 
+  android:
+    name: Android prototype APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build with runner JDK and official Android SDK
+        run: |
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+          bash mobile/android/build.sh
+          (cd build/android && sha256sum AgentOne-Context-prototype.apk > APK-SHA256SUMS)
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: AgentOne-Android-prototype
+          path: |
+            build/android/AgentOne-Context-prototype.apk
+            build/android/APK-SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
   all-checks-passed:
     name: all checks passed
-    needs: [workflow-lint, runtime, macos]
+    needs: [workflow-lint, runtime, macos, android]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -131,7 +155,7 @@ jobs:
           RESULTS: ${{ join(needs.*.result, ',') }}
         run: |
           echo "Gate results: $RESULTS"
-          if [[ "$RESULTS" != 'success,success,success' ]]; then
+          if [[ "$RESULTS" != 'success,success,success,success' ]]; then
             echo '::error::A required gate failed or was skipped'
             exit 1
           fi

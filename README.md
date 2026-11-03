@@ -22,6 +22,8 @@ Thenvia（留境，原 AgentOne）把允许记录的系统声音、麦克风与�
 
 顶部灵动岛负责记录状态和用户控制，插件与 MCP 负责把资料交给现有 Agent。
 
+Android Context 与 Super Agent 的新原型见 [设计与验证边界](docs/vnext/ANDROID_SUPERAGENT_CONTEXT.md)、[Android 构建说明](mobile/android/README.md) 和 [Source/Channel 接入](integrations/superagent-context/README.md)。已提供源码和可本地构建 APK；真实手机采集、模型派单和主动回报尚未完成端到端验收。
+
 > **开发预览**：新版应用目前位于 [`codex/audio-memory-mvp`](https://github.com/agentone666-ship-it/Thenvia/tree/codex/audio-memory-mvp)，见 [PR #2](https://github.com/agentone666-ship-it/Thenvia/pull/2)。`main` 的应用代码仍在迁移前阶段；下面的体验步骤会切换到新版。App 内及配置中的 `AgentOne` 名称暂作兼容保留。
 
 ## 留下现场，找回依据，接着做
