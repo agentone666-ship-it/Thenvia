@@ -17,6 +17,11 @@ import java.util.concurrent.*;
 /** One continuous native recorder; file rotation is storage, not a sentence/conversation boundary. */
 public final class CaptureService extends Service implements LocationListener {
     static volatile boolean recording=false;
+    static volatile float level=0;
+    private final Handler meter=new Handler(Looper.getMainLooper());
+    private final Runnable sample=new Runnable(){public void run(){
+        if(recorder!=null&&recording){try{level=(float)Math.min(1,Math.log1p(recorder.getMaxAmplitude())/10.4);}catch(RuntimeException ignored){level=0;}meter.postDelayed(this,100);}
+    }};
     private MediaRecorder recorder;
     private LocationManager locations;
     private Location location;
@@ -67,6 +72,7 @@ public final class CaptureService extends Service implements LocationListener {
                 } catch(Exception e) {Sync.status(this,"分片写入异常，原音保留待检查");stopSelf();}
             });
             recorder.prepare();recorder.start();recording=true;
+            meter.post(sample);
             Sync.prefs(this).edit().putBoolean("capture_was_active",true).apply();
             network.scheduleWithFixedDelay(()->Sync.run(this),1,30,TimeUnit.SECONDS);
         } catch(Exception e) {Sync.status(this,"未能开始录音："+e.getClass().getSimpleName());stopSelf();}
@@ -93,6 +99,7 @@ public final class CaptureService extends Service implements LocationListener {
     @Override public void onLocationChanged(Location l){location=l;}
     @Override public void onDestroy() {
         recording=false;
+        level=0;meter.removeCallbacksAndMessages(null);
         if(locations!=null)locations.removeUpdates(this);
         if(recorder!=null) {
             try {recorder.stop();seal(currentId,current,chunkStart,now());}catch(Exception e){Sync.status(this,"尾段尚未封装完成，原音保留待检查");}

@@ -55,7 +55,8 @@ final class Sync {
                     if(!meta.delete())throw new IOException("清理本地回执失败");audio.delete();
                 }
             }
-            status(c,"已连接 · 录音保存到服务后才清理手机缓存");collectReports(c);
+            JSONObject health=request(c,"GET","/v1/health",null);
+            status(c,health.optBoolean("agent_connected")?"手机与 Agent 已连通":"手机已连接 · 等待 Super Agent 接入");collectReports(c);
         } catch(Exception e) {status(c,"未同步："+e.getClass().getSimpleName()+" · 原音仍保留在手机，将重试");}
     }
     static void channels(Context c) {

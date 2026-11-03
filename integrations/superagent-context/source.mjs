@@ -2,6 +2,9 @@
 import {z} from 'zod';
 import {setTimeout as delay} from 'node:timers/promises';
 import {BOT,SOURCE,eligible,renderEvidence,triggerFor} from './protocol.mjs';
+import {readFileSync,statSync} from 'node:fs';
+import {join} from 'node:path';
+import {homedir} from 'node:os';
 
 const localUrl=z.string().url().refine(value=>{const u=new URL(value);return !u.username&&!u.password&&!u.search&&!u.hash&&u.pathname==='/'&&(u.protocol==='https:'||(u.protocol==='http:'&&['127.0.0.1','localhost','[::1]'].includes(u.hostname)));},'Bridge must use HTTPS or local loopback');
 const Config=z.object({bridgeUrl:localUrl.default('http://127.0.0.1:3487/'),deviceId:z.string().regex(/^[A-Za-z0-9_-]{1,100}$/).default('android-owner'),pollSeconds:z.number().int().min(5).max(300).default(15)}).strict();
@@ -9,7 +12,11 @@ const person=z.object({id:z.string().min(1),name:z.string().optional()}).strict(
 const policy=z.object({allowed:z.array(person).default([]),bots:z.array(person).default([])}).strict();
 
 async function request(config,path,body,signal) {
-  const token=process.env.AGENTONE_AGENT_TOKEN;
+  let token=process.env.AGENTONE_AGENT_TOKEN;
+  if(!token) {
+    const file=join(homedir(),'Library/Application Support/AgentOne/MobileConnect/connection.json');
+    try{if((statSync(file).mode&0o077)===0)token=JSON.parse(readFileSync(file,'utf8')).agentToken;}catch{}
+  }
   if(!token||token.length<32)throw new Error('AGENTONE_AGENT_TOKEN is missing');
   const timeout=AbortSignal.timeout(20000);
   const response=await fetch(new URL(path,config.bridgeUrl),{

@@ -116,3 +116,26 @@ test('source settings refuse insecure remote URLs and default to no bot authorit
   assert.throws(()=>kind.schema.parse({bridgeUrl:'https://a:b@example.com/'}));
   assert.deepEqual(kind.policy.schema.parse({}).bots,[]);
 });
+
+test('pair links are short lived, single use and cannot expose agent credentials',async t=>{
+  const {store}=setup(t);const {base,call}=await serving(t,store);
+  assert.notEqual((await call('device','v1/pair/create',{})).status,200);
+  const created=await call('agent','v1/pair/create',{});assert.equal(created.status,200);assert.equal(created.body.expires_in,120);
+  const redeem=()=>fetch(base+'v1/pair/redeem',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code:created.body.code})});
+  const results=await Promise.all([redeem(),redeem()]);assert.deepEqual(results.map(r=>r.status).sort(),[200,410]);
+  const paired=await results.find(r=>r.status===200).json();assert.equal(paired.device_token,deviceToken);assert.equal(paired.agentToken,undefined);assert.equal(paired.workerToken,undefined);
+  assert.equal(JSON.stringify(created.body).includes(deviceToken),false);
+});
+test('public phone gateway refuses source, worker and forged report writes',async t=>{
+  const {publicGateway}=await import('./gateway.mjs');const {store}=setup(t);const {base}=await serving(t,store);
+  const gateway=publicGateway(base);gateway.listen(0,'127.0.0.1');await once(gateway,'listening');
+  t.after(()=>new Promise(resolve=>{gateway.close(resolve);gateway.closeAllConnections();}));
+  const url=`http://127.0.0.1:${gateway.address().port}`;
+  for(const [method,path] of [['GET','/v1/events'],['POST','/v1/jobs/claim'],['POST','/v1/reports'],['POST','/v1/pair/create']])assert.equal((await fetch(url+path,{method,headers:{authorization:'Bearer '+agentToken}})).status,403);
+  assert.equal((await fetch(url+'/v1/health',{headers:{authorization:'Bearer '+deviceToken}})).status,200);
+});
+test('paired transport and actual agent polling are distinct readiness states',async t=>{
+  const {store}=setup(t);const {call}=await serving(t,store);
+  assert.equal((await call('device','v1/health')).body.agent_connected,false);
+  await call('agent','v1/events');assert.equal((await call('device','v1/health')).body.agent_connected,true);
+});

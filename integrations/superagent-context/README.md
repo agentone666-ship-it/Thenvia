@@ -87,3 +87,9 @@ See [Android prototype](../../mobile/android/README.md). On the phone configure 
 ## Data and retention
 
 Audio, transcripts, location and results are private owner data in the bridge database and Android app-private queue. SQLite files are mode 0600 and the directory is private; this is not application-level encryption or a multi-user service. Phone cloud backups are disabled. Audio is deleted from the phone queue only after a durable bridge receipt. Bridge retention/delete UI, quotas, multi-device encryption and exports are not implemented yet; use synthetic data for initial acceptance and monitor disk space. Removing the desktop voice profile does not retract already delivered evidence or stop existing Tickets. Voice data never independently supplies authority.
+
+## One-action Mac pairing
+
+The packaged Mac settings now has “连接 Android 手机”. Its helper automatically generates private credentials, starts/reuses a loopback bridge and device-only HTTPS quick tunnel, stages the Source when the existing Super Agent is healthy, then renders a QR code and copies a one-use `agentone://pair` link. Android opens the link and exchanges its 120-second ticket for a device credential. Long-lived Agent/ASR credentials never enter the link. Source credentials are also read from the mode-0600 local `MobileConnect/connection.json`, so a host process environment edit is unnecessary.
+
+Engineering equivalent: `node integrations/superagent-context/connect-phone.mjs`. Its stdout contains a short-lived pairing link; do not publish it or commit it. Existing Super Agent global rules/mode are preserved. The helper does not restart a running host. Automatic execution and ASR still require their existing configured capabilities; paired transport is reported separately.

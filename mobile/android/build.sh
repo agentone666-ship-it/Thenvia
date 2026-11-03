@@ -13,7 +13,7 @@ for tool in "$task_java/bin/javac" "$task_tools/aapt" "$task_tools/d8" "$task_to
 python3 - "$task_build/AndroidManifest.xml" <<'PY'
 import pathlib,sys
 text=pathlib.Path('app/src/main/AndroidManifest.xml').read_text()
-text=text.replace('<manifest ', '<manifest package="life.agentone.mobile" android:versionCode="1" android:versionName="0.1.0" ')
+text=text.replace('<manifest ', '<manifest package="life.agentone.mobile" android:versionCode="2" android:versionName="0.1.1" ')
 text=text.replace('<application ', '<uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35" /><application android:debuggable="true" ')
 pathlib.Path(sys.argv[1]).write_text(text)
 PY

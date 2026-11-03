@@ -49,6 +49,13 @@ done
 
 cp -R "$project_dir/plugins/agentone-memory/.codex-plugin" "$project_dir/plugins/agentone-memory/skills" "$plugin_resources/"
 
+
+# Phone pairing components contain no user credentials; these are generated privately on first connection.
+mkdir -p "$contents_dir/Resources/mobile-connect"
+for component in connect-phone.mjs gateway.mjs server.mjs store.mjs source.mjs protocol.mjs package.json package-lock.json cordis.patch.yml; do
+    cp "$project_dir/integrations/superagent-context/$component" "$contents_dir/Resources/mobile-connect/"
+done
+
 cp "$project_dir/tools/laya-decision/worker.py" "$contents_dir/Resources/laya-worker.py"
 cp "$project_dir/tools/voiceprint/worker.py" "$contents_dir/Resources/voiceprint-worker.py"
 cp "$project_dir/tools/voiceprint/setup.py" "$contents_dir/Resources/voiceprint-setup.py"
