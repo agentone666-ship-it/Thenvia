@@ -4,6 +4,7 @@ set -euo pipefail
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 runtime() {
+    node --test integrations/project-archive/test.mjs
     npm ci --prefix integrations/superagent-context --ignore-scripts --no-audit --no-fund
     node --test integrations/superagent-context/test.mjs
     node benchmarks/voice-tasks/score.mjs
