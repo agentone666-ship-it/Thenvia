@@ -5,6 +5,7 @@ import {
   readFileSync,
   existsSync,
   lstatSync,
+  renameSync,
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -41,7 +42,13 @@ export async function classifyProject(text, projects) {
   if (!existsSync(response)) return null;
   if (lstatSync(response).isSymbolicLink())
     throw new Error("Session response must be a regular file");
-  const result = JSON.parse(readFileSync(response, "utf8"));
+  let result;
+  try {
+    result = JSON.parse(readFileSync(response, "utf8"));
+  } catch {
+    renameSync(response, response + ".rejected");
+    throw new Error("Session returned invalid JSON; retry requested");
+  }
   const validChoice =
     result.choice === "unknown" ||
     projects.some((project) => project.id === result.choice);
@@ -55,7 +62,9 @@ export async function classifyProject(text, projects) {
     typeof result.quote !== "string" ||
     (result.choice !== "unknown" &&
       (!result.quote.trim() || !text.includes(result.quote)))
-  )
+  ) {
+    renameSync(response, response + ".rejected");
     throw new Error("Session returned unsupported project evidence");
+  }
   return result;
 }
