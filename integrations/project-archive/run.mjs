@@ -8,12 +8,10 @@ import {
   statSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { join, dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { ProjectArchive, projectsFromCodex } from "./archive.mjs";
 import { memoryRoot } from "../../plugins/agentone-memory/store.mjs";
 
-const here = dirname(fileURLToPath(import.meta.url));
 const root =
   process.env.AGENTONE_ARCHIVE_STATE ??
   join(homedir(), "Library/Application Support/AgentOne/ProjectArchive");

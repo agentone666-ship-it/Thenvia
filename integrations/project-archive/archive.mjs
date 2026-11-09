@@ -9,7 +9,7 @@ import {
   renameSync,
   unlinkSync,
 } from "node:fs";
-import { join, dirname, resolve, sep } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { homedir } from "node:os";
 import { MemoryStore } from "../../plugins/agentone-memory/store.mjs";
 import { ConversationStore } from "../../plugins/agentone-memory/conversations.mjs";
