@@ -23,7 +23,13 @@ mkdirSync(archive, { recursive: true, mode: 0o700 });
 mkdirSync(memory, { recursive: true, mode: 0o700 });
 const oldClassifier = join(archive, "classify.mjs");
 if (existsSync(oldClassifier)) unlinkSync(oldClassifier);
-for (const file of ["run.mjs", "archive.mjs", "session-inbox.mjs"])
+for (const file of [
+  "run.mjs",
+  "archive.mjs",
+  "session-inbox.mjs",
+  "work-orders.mjs",
+  "WORKFLOW.md",
+])
   copyFileSync(join(source, file), join(archive, file));
 for (const file of [
   "store.mjs",

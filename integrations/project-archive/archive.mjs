@@ -215,7 +215,13 @@ export class ProjectArchive {
           const decisionKey = hash(c.input_digest + catalogDigest);
           let result = this.decisions[decisionKey];
           if (!result) {
-            result = await this.classify(text, projects);
+            result = await this.classify(text, projects, {
+              conversation_id: id,
+              source_digest: c.input_digest,
+              started_ms: Number(c.started_ms),
+              ended_ms: Number(c.ended_ms),
+              owner_voice: this.conversations.participation(c),
+            });
             if (result) {
               this.decisions[decisionKey] = result;
               writeFileSync(

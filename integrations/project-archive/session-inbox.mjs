@@ -11,7 +11,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 /** Files are transport for the dedicated Codex chat's decisions. */
-export async function classifyProject(text, projects) {
+export async function classifyProject(text, projects, context) {
   const state =
     process.env.AGENTONE_ARCHIVE_STATE ??
     join(homedir(), "Library/Application Support/AgentOne/ProjectArchive");
@@ -22,6 +22,7 @@ export async function classifyProject(text, projects) {
   const input = {
     version: 1,
     transcript: text,
+    ...(context ? { context } : {}),
     projects: projects.map(({ id, name, description }) => ({
       id,
       name,
