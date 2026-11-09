@@ -1,4 +1,4 @@
-import { classifyProject } from "./classify.mjs";
+import { classifyProject } from "./session-inbox.mjs";
 import {
   readFileSync,
   writeFileSync,
@@ -68,7 +68,7 @@ while (!stopped) {
       JSON.stringify({
         ...result,
         updated_at: new Date().toISOString(),
-        classifier: "codex",
+        classifier: "dedicated_codex_session",
       }),
       { mode: 0o600 },
     );
@@ -78,7 +78,7 @@ while (!stopped) {
       JSON.stringify({
         status: "waiting_or_retrying",
         updated_at: new Date().toISOString(),
-        classifier: "codex",
+        classifier: "dedicated_codex_session",
       }),
       { mode: 0o600 },
     );

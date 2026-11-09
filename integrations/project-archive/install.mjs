@@ -1,4 +1,11 @@
-import { mkdirSync, copyFileSync, writeFileSync, chmodSync } from "node:fs";
+import {
+  mkdirSync,
+  copyFileSync,
+  writeFileSync,
+  chmodSync,
+  existsSync,
+  unlinkSync,
+} from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,7 +21,9 @@ const archive = join(runtime, "integrations/project-archive");
 const memory = join(runtime, "plugins/agentone-memory");
 mkdirSync(archive, { recursive: true, mode: 0o700 });
 mkdirSync(memory, { recursive: true, mode: 0o700 });
-for (const file of ["run.mjs", "archive.mjs", "classify.mjs"])
+const oldClassifier = join(archive, "classify.mjs");
+if (existsSync(oldClassifier)) unlinkSync(oldClassifier);
+for (const file of ["run.mjs", "archive.mjs", "session-inbox.mjs"])
   copyFileSync(join(source, file), join(archive, file));
 for (const file of [
   "store.mjs",
