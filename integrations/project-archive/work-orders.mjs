@@ -311,8 +311,9 @@ export class WorkOrders {
     this.verifySource?.(order.contract.source, order.contract.quote);
     const accepted =
       score >= 60 &&
-      review.scores.function >= 18 &&
-      review.scores.validation >= 12 &&
+      Object.entries(QUALITY_LIMITS).every(
+        ([name, limit]) => review.scores[name] >= Math.ceil(limit * 0.6),
+      ) &&
       gates.every((name) => review[name]);
     check(
       accepted ||

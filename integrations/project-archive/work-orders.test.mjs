@@ -167,3 +167,37 @@ test("a new idea can use a bounded standalone experiment directory", (t) => {
     join(root, "IdeaLab", proposal.goal_key),
   );
 });
+
+test("a technically complete delivery with zero usability is returned for rework", (t) => {
+  const { orders, proposal, project } = fixture(t);
+  const id = orders.reserve(proposal).order.id;
+  const thread = "11111111-1111-1111-1111-111111111111";
+  orders.bind(id, thread);
+  const artifact = join(project, "prototype.html");
+  writeFileSync(artifact, "fixture");
+  orders.submit(id, {
+    thread_id: thread,
+    artifacts: [artifact],
+    checks: ["actual fixture check"],
+  });
+  const review = {
+    reviewer_thread_id: "coordinator",
+    scores: {
+      goal: 10,
+      scope: 15,
+      function: 30,
+      usability: 0,
+      validation: 20,
+      handoff: 10,
+    },
+    core_flow_verified: true,
+    validation_verified: true,
+    usable_artifact_verified: true,
+    no_major_blocker: true,
+    evidence:
+      "Reviewed actual fixture and found the user flow impossible to understand.",
+    rework:
+      "Improve the interaction and its visual clarity before submitting again.",
+  };
+  assert.equal(orders.review(id, review).state, "rework");
+});

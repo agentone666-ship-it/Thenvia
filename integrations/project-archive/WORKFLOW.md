@@ -39,7 +39,7 @@
 | validation | 20 | 关键路径与必要边界有验证证据，研究引用已回查 |
 | handoff | 10 | 产物、使用方法、局限和结果可追溯 |
 
-总分至少 60，function 至少 18，validation 至少 12。同时四个硬条件全部成立，分别为 `core_flow_verified`、`validation_verified`、`usable_artifact_verified`、`no_major_blocker`。这些条件由协调会话实际检查后填写。已有用户工作不能被覆盖。界面成果应在后台或隔离环境检查，遵循用户的后台调试偏好。
+总分至少 60，六项各达到本项满分的 60%，其中 function 至少 18，validation 至少 12，usability 至少 9。同时四个硬条件全部成立，分别为 `core_flow_verified`、`validation_verified`、`usable_artifact_verified`、`no_major_blocker`。这些条件由协调会话实际检查后填写。已有用户工作不能被覆盖。界面成果应在后台或隔离环境检查，遵循用户的后台调试偏好。
 
 review JSON 包含 `reviewer_thread_id`、`scores`、四个布尔硬条件、`evidence`（协调会话独立核查的内容）以及未达标时的具体 `rework`。执行 `node <work-orders.mjs> review <order_id> <review.json>`。达到门槛后状态变为 accepted，未达到时变为 rework。分数表达最低交付门槛，细项依据应能被复查。
 
