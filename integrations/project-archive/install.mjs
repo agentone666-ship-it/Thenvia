@@ -5,10 +5,12 @@ import {
   chmodSync,
   existsSync,
   unlinkSync,
+  readFileSync,
 } from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { memoryRoot } from "../../plugins/agentone-memory/store.mjs";
 import { spawnSync } from "node:child_process";
 
 const source = dirname(fileURLToPath(import.meta.url));
@@ -29,6 +31,8 @@ for (const file of [
   "session-inbox.mjs",
   "work-orders.mjs",
   "WORKFLOW.md",
+  "event-hooks.mjs",
+  "codex-session.mjs",
 ])
   copyFileSync(join(source, file), join(archive, file));
 for (const file of [
@@ -42,6 +46,16 @@ for (const file of [
     resolve(source, "../../plugins/agentone-memory", file),
     join(memory, file),
   );
+const configPath = join(state, "config.json");
+const config = existsSync(configPath) ? JSON.parse(readFileSync(configPath, "utf8")) : {};
+// Use the installed Codex harness, never copy auth tokens or set up an inference proxy.
+const bundledCodex = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex";
+config.codex_binary = process.env.AGENTONE_CODEX_BINARY ?? (existsSync(bundledCodex) ? bundledCodex : config.codex_binary);
+if (!config.codex_binary || !existsSync(config.codex_binary)) throw new Error("Install Codex or set AGENTONE_CODEX_BINARY");
+config.since ??= Date.now();
+config.memoryRoot ??= memoryRoot();
+config.trigger = "filesystem_hook";
+writeFileSync(configPath, JSON.stringify(config, null, 2), { mode: 0o600 });
 const label = "life.agentone.project-archive";
 const folder = join(homedir(), "Library/LaunchAgents");
 mkdirSync(folder, { recursive: true });
